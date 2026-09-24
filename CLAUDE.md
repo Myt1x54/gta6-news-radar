@@ -147,8 +147,11 @@ errors fail CI). `config.py` `_env()` treats empty secrets as unset so only the
 GEMINI_API_KEY, GROQ_API_KEY). README Step 7 has exact secret list + how to test
 via the Actions "Run workflow" button.
 
-**Phase 5 (Dashboard) — BUILT & VERIFIED LIVE** (login, ranked feed, story
-detail all render with real data via the preview). Pending: Cloudflare deploy.
+**Phase 5 (Dashboard) — COMPLETE & DEPLOYED LIVE ON VERCEL** (2026-09-25) at
+gta6-news-radar.vercel.app (repo Myt1x54/gta6-news-radar). Login, ranked feed,
+story detail all working with real data. Gotcha hit + fixed: NEXT_PUBLIC_* env
+vars must be set in Vercel BEFORE build (they're inlined at build time); missing
+them → 500 "URL and Key are required". Env vars now set + redeployed.
 `web/` = Next.js 16 (App Router) + React 19 + Tailwind 4 + TypeScript. Uses
 `@supabase/ssr` (browser client `lib/supabase/client.ts`, server client
 `lib/supabase/server.ts`, `proxy.ts` for session refresh + route gating —
@@ -161,8 +164,11 @@ launch.json` has a `web` dev-server config (port 3000). web/.env.local holds
 NEXT_PUBLIC_SUPABASE_URL + ANON key (gitignored). Auth user exists:
 abdulmoiz56898@gmail.com.
 
-**Next:** user logs in + confirms feed renders; then deploy to Cloudflare Pages
-(README Step 8 — to be written); then Phase 6 (email).
+**Next — Phase 6 (Email):** breaking alerts (rank_score >= threshold, dedupe via
+alerted_at, max 5/hr bundled, quiet hours) + daily digest (top 5 + best idea +
+trends). Gmail SMTP via App Password in `collector/emailer/`. Needs user to make
+a Gmail App Password (README Step 5) + add SMTP_* GitHub Secrets. New workflow
+digest.yml (daily 04:00 UTC); alerts fire from the collect run.
 
 **To run the collector live:** `python collector/run.py` (add `--no-ai` to skip
 enrichment). AI backfill spreads 24 stories/run until all are enriched.
