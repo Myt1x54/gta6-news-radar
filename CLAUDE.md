@@ -147,8 +147,21 @@ errors fail CI). `config.py` `_env()` treats empty secrets as unset so only the
 GEMINI_API_KEY, GROQ_API_KEY). README Step 7 has exact secret list + how to test
 via the Actions "Run workflow" button.
 
-**Next — Phase 5 (Dashboard):** Next.js + Tailwind on Cloudflare Pages, Supabase
-Auth login, ranked feed, story detail, status changes.
+**Phase 5 (Dashboard) — BUILT, pending user login check + Cloudflare deploy.**
+`web/` = Next.js 16 (App Router) + React 19 + Tailwind 4 + TypeScript. Uses
+`@supabase/ssr` (browser client `lib/supabase/client.ts`, server client
+`lib/supabase/server.ts`, `proxy.ts` for session refresh + route gating —
+Next 16 renamed middleware→proxy). Pages: `/login` (email+password), `/` (ranked
+feed with sort/category/status/score/time filters + expandable video ideas +
+inline status buttons), `/story/[id]` (AI output, video ideas, sources w/ links,
+notes editor, status). Uses the public ANON key only (RLS enforces). `npm run
+build` passes; login page + auth gating verified live via preview. `.claude/
+launch.json` has a `web` dev-server config (port 3000). web/.env.local holds
+NEXT_PUBLIC_SUPABASE_URL + ANON key (gitignored). Auth user exists:
+abdulmoiz56898@gmail.com.
+
+**Next:** user logs in + confirms feed renders; then deploy to Cloudflare Pages
+(README Step 8 — to be written); then Phase 6 (email).
 
 **To run the collector live:** `python collector/run.py` (add `--no-ai` to skip
 enrichment). AI backfill spreads 24 stories/run until all are enriched.
