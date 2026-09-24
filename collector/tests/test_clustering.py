@@ -1,6 +1,12 @@
 from datetime import datetime, timedelta, timezone
 
-from clustering import assign_clusters, normalize_title, title_similarity
+from clustering import (
+    assign_clusters,
+    normalize_title,
+    same_event,
+    significant_tokens,
+    title_similarity,
+)
 
 BASE = datetime(2026, 9, 24, 12, 0, tzinfo=timezone.utc)
 
@@ -42,6 +48,41 @@ def test_article_attaches_to_existing_story():
     res = assign_clusters(arts, existing)
     assert res[0]["story_id"] == "abc"
     assert res[0]["cluster_key"] == ("existing", "abc")
+
+
+def test_significant_tokens_drop_generic_words():
+    # "gta", "6", "rockstar", "reveals" are generic/stopwords and dropped
+    assert significant_tokens("Rockstar Reveals GTA 6 Collector's Box") == {"collectors", "box"}
+
+
+def test_same_event_matches_paraphrases():
+    assert same_event(
+        "Rockstar Reveals $400 GTA 6 Collector's Box That Doesn't Include The Game",
+        "GTA 6 Collector's Box Is $400, Doesn't Include the Game",
+    )
+
+
+def test_same_event_rejects_shared_generic_only():
+    # both mention GTA 6 but are unrelated events -> must NOT merge
+    assert not same_event(
+        "GTA 6 Will Make Pro Athletes Perform Worse, NBA Star Says",
+        "Rockstar Reveals $400 GTA 6 Collector's Box",
+    )
+    assert not same_event(
+        "GTA 6 soundtrack album announced with Travis Scott",
+        "GTA 6 map leak surfaces online",
+    )
+
+
+def test_unrelated_gta6_titles_stay_separate():
+    arts = [
+        _art(1, "Rockstar Reveals $400 GTA 6 Collector's Box"),
+        _art(2, "GTA 6 soundtrack album announced with Travis Scott", hours=1),
+        _art(3, "Rainbow Six Siege director braces for GTA 6 launch", hours=2),
+    ]
+    res = assign_clusters(arts)
+    keys = {r["article"]["id"]: r["cluster_key"] for r in res}
+    assert len({keys[1], keys[2], keys[3]}) == 3  # three distinct clusters
 
 
 def test_same_title_outside_window_does_not_cluster():

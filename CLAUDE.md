@@ -185,11 +185,15 @@ enrichment). AI backfill spreads 24 stories/run until all are enriched.
       Reddit OAuth (free "script" app)** → reliable access + restores upvote/
       comment counts. Recommended as first task of Phase 3. Needs user to create
       the app (REDDIT_CLIENT_ID/SECRET).
-- [ ] **Clustering under-merges** (Phase 3): cross-outlet coverage of the SAME
-      event often splits into separate stories because paraphrased titles score
-      below the 85 rapidfuzz threshold (e.g. "$400 set" vs "£349.99 box"). Fix
-      options: lower threshold carefully, add key-entity/number matching, or the
-      brief's suggested AI tie-breaker for borderline pairs. Tune in Phase 8.
+- [~] **Clustering improved (Phase 3.1, 2026-09-25):** switched from raw
+      token_set_ratio@85 to significant-token matching (strip generic gta/6/
+      rockstar words; match ANY cluster member; share>=2 tokens AND (jaccard>=
+      0.45 OR fuzzy>=77)). Rebuilt: 341 articles -> 261 stories, main event now
+      a 26-article cluster (was ~6 splits). Params in config.py. `recluster.py`
+      rebuilds after tuning. RESIDUAL: ~4-5 of top-15 are still the same event
+      split by pricing/wording ("$399 swag box" vs "£349.99 premium box") —
+      lexical ceiling. Next lever = optional AI tie-breaker for borderline
+      pairs (user to decide; adds AI cost/complexity).
 - [ ] **Reddit OAuth coded but not yet live-tested** — activates when the user
       adds REDDIT_CLIENT_ID/SECRET. Falls back to .rss until then.
 - [ ] **Kotaku feed** SSL-handshake-times-out from the dev sandbox; likely a

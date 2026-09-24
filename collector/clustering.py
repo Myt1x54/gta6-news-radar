@@ -1,49 +1,95 @@
 """Group articles about the same event into one "story" (cluster).
 
-Approach (per PROJECT_BRIEF §6.1): fuzzy title similarity within a time window.
-New articles can either join an existing recent story or form a new cluster, and
-new articles also cluster among themselves in the same pass.
+Approach (PROJECT_BRIEF §6.1, tuned in Phase 3.1): match on a title's
+*significant* tokens within a time window. Generic words (gta, 6, rockstar,
+"reveals"...) are stripped first so that shared boilerplate doesn't merge
+unrelated stories, and so that paraphrased coverage of the same event still
+merges. A candidate joins a cluster if it matches ANY member of that cluster.
 
 Pure functions over plain dicts — no DB access — so it's easy to unit-test.
-The DB glue (loading recent stories, writing assignments) lives in run.py.
+The DB glue (loading recent stories, writing assignments) lives in processing.py.
 """
 
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from rapidfuzz import fuzz
 
-from config import CLUSTER_WINDOW_HOURS, TITLE_SIMILARITY_THRESHOLD
+from config import (
+    CLUSTER_FUZZY_THRESHOLD,
+    CLUSTER_MIN_JACCARD,
+    CLUSTER_MIN_SHARED_TOKENS,
+    CLUSTER_WINDOW_HOURS,
+)
 
-# Strip a trailing " - Publisher" / " | Publisher" suffix (common in Google
-# News and outlet titles) so it doesn't distort similarity.
+# Strip a trailing " - Publisher" / " | Publisher" suffix.
 _PUBLISHER_SUFFIX_RE = re.compile(r"\s+[-|–—]\s+[^-|–—]{1,40}$")
-_APOS_RE = re.compile(r"[’'`]")
+_APOS_RE = re.compile(r"[’'`′]")
 _NON_ALNUM_RE = re.compile(r"[^a-z0-9 ]+")
 _WS_RE = re.compile(r"\s+")
 
+# Words too generic to help distinguish one GTA 6 event from another.
+_STOPWORDS = set(
+    "the a an of for to in on at is are was be by with and or vs new latest "
+    "reveals reveal revealed unveils unveil shows show reportedly report reports "
+    "according has have had will its it this that as from you your".split()
+)
+_GENERIC = set("gta grand theft auto 6 vi game games rockstar".split())
+
 
 def normalize_title(title: str | None) -> str:
-    """Lowercase, drop a trailing publisher suffix and punctuation."""
+    """Lowercase, drop a trailing publisher suffix, apostrophes and punctuation."""
     if not title:
         return ""
-    t = title.strip()
-    t = _PUBLISHER_SUFFIX_RE.sub("", t)
-    t = t.lower()
-    t = _APOS_RE.sub("", t)  # drop apostrophes so "collector's" -> "collectors"
+    t = _PUBLISHER_SUFFIX_RE.sub("", title.strip()).lower()
+    t = _APOS_RE.sub("", t)
     t = _NON_ALNUM_RE.sub(" ", t)
     return _WS_RE.sub(" ", t).strip()
 
 
+def significant_tokens(title: str | None) -> set[str]:
+    """The distinguishing tokens of a title (no stopwords / generic GTA words)."""
+    return {
+        w
+        for w in normalize_title(title).split()
+        if len(w) > 2 and w not in _STOPWORDS and w not in _GENERIC
+    }
+
+
+def _sig_string(title: str | None) -> str:
+    return " ".join(sorted(significant_tokens(title)))
+
+
+def same_event(
+    a: str | None,
+    b: str | None,
+    *,
+    min_shared: int = CLUSTER_MIN_SHARED_TOKENS,
+    min_jaccard: float = CLUSTER_MIN_JACCARD,
+    fuzzy: int = CLUSTER_FUZZY_THRESHOLD,
+) -> bool:
+    """True if two titles describe the same event."""
+    sa, sb = significant_tokens(a), significant_tokens(b)
+    if not sa or not sb:
+        return False
+    shared = len(sa & sb)
+    if shared < min_shared:
+        return False
+    jaccard = shared / len(sa | sb)
+    if jaccard >= min_jaccard:
+        return True
+    return fuzz.token_set_ratio(_sig_string(a), _sig_string(b)) >= fuzzy
+
+
 def title_similarity(a: str | None, b: str | None) -> float:
-    """0-100 similarity between two titles (order/extra-word tolerant)."""
-    na, nb = normalize_title(a), normalize_title(b)
-    if not na or not nb:
+    """0-100 fuzzy similarity over significant tokens (kept for diagnostics)."""
+    sa, sb = _sig_string(a), _sig_string(b)
+    if not sa or not sb:
         return 0.0
-    return float(fuzz.token_set_ratio(na, nb))
+    return float(fuzz.token_set_ratio(sa, sb))
 
 
 def _anchor_time(dt: datetime | None) -> datetime:
@@ -62,7 +108,6 @@ def assign_clusters(
     articles: list[dict[str, Any]],
     existing_stories: list[dict[str, Any]] | None = None,
     *,
-    threshold: int = TITLE_SIMILARITY_THRESHOLD,
     window_hours: int = CLUSTER_WINDOW_HOURS,
 ) -> list[dict[str, Any]]:
     """Assign each article to a story cluster.
@@ -73,19 +118,17 @@ def assign_clusters(
             ``story_id``, ``title``, ``anchor_time``.
 
     Returns a list parallel to sorted input, each item:
-        {"article": <article>,
-         "story_id": <existing id or None>,
-         "cluster_key": <stable key: ("existing", id) or ("new", n)>}
-    New clusters share a ``("new", n)`` key so the caller can create one story
-    per new cluster and attach all its articles.
+        {"article": <article>, "story_id": <existing id or None>,
+         "cluster_key": ("existing", id) | ("new", n)}
     """
+    # Each cluster tracks its member titles so a candidate can match ANY member.
     clusters: list[dict[str, Any]] = []
     for s in existing_stories or []:
         clusters.append(
             {
                 "key": ("existing", s["story_id"]),
                 "story_id": s["story_id"],
-                "title": s["title"],
+                "titles": [s["title"]],
                 "time": _anchor_time(s.get("anchor_time")),
             }
         )
@@ -93,32 +136,31 @@ def assign_clusters(
     results: list[dict[str, Any]] = []
     next_new = 0
 
-    # Oldest first so a cluster's representative is its earliest article.
+    # Oldest first so a cluster forms around its earliest article.
     ordered = sorted(articles, key=lambda a: _anchor_time(a.get("published_at")))
     for art in ordered:
         atime = _anchor_time(art.get("published_at"))
-        best = None
-        best_score = 0.0
+        title = art.get("title")
+        match = None
         for c in clusters:
             if not _within_window(atime, c["time"], window_hours):
                 continue
-            score = title_similarity(art.get("title"), c["title"])
-            if score > best_score:
-                best_score = score
-                best = c
+            if any(same_event(title, m) for m in c["titles"]):
+                match = c
+                break
 
-        if best is not None and best_score >= threshold:
-            # keep the cluster's anchor time at the most recent member
-            if atime > best["time"]:
-                best["time"] = atime
+        if match is not None:
+            match["titles"].append(title)
+            if atime > match["time"]:
+                match["time"] = atime
             results.append(
-                {"article": art, "story_id": best["story_id"], "cluster_key": best["key"]}
+                {"article": art, "story_id": match["story_id"], "cluster_key": match["key"]}
             )
         else:
             key = ("new", next_new)
             next_new += 1
             clusters.append(
-                {"key": key, "story_id": None, "title": art.get("title"), "time": atime}
+                {"key": key, "story_id": None, "titles": [title], "time": atime}
             )
             results.append({"article": art, "story_id": None, "cluster_key": key})
 

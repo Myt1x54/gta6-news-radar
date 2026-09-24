@@ -87,8 +87,14 @@ GTA6_EXCLUDE_KEYWORDS = [
 # ---------------------------------------------------------------------------
 # Clustering / dedupe
 # ---------------------------------------------------------------------------
-# rapidfuzz title-similarity threshold (0-100) to merge into one story.
-TITLE_SIMILARITY_THRESHOLD = 85
+# Clustering matches on the *significant* tokens of a title (generic words like
+# "gta"/"6"/"rockstar" are ignored) so paraphrased coverage of the same event
+# merges, without lumping together everything that merely mentions GTA 6.
+# Two titles are the same event if they share >= MIN_SHARED significant tokens
+# AND (token Jaccard >= MIN_JACCARD OR fuzzy score >= FUZZY_THRESHOLD).
+CLUSTER_MIN_SHARED_TOKENS = 2
+CLUSTER_MIN_JACCARD = 0.45
+CLUSTER_FUZZY_THRESHOLD = 77
 # Only cluster articles within this many hours of each other.
 CLUSTER_WINDOW_HOURS = 48
 # URL query params stripped before dedupe (tracking junk).
