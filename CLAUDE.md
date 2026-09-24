@@ -136,8 +136,10 @@ Phase 2 done:
   New flag `--no-ai`. Reddit OAuth wired (uses token if creds present, else .rss).
 - 31 tests total, all passing.
 
-**Phase 4 (GitHub Actions cron) — CODE COMPLETE**, pending user pushing to a
-public GitHub repo + adding secrets. Created `.github/workflows/collect.yml`
+**Phase 4 (GitHub Actions cron) — COMPLETE & VERIFIED LIVE** (2026-09-25). User
+pushed to a public GitHub repo, added the 4 required secrets, and the `collect`
+workflow ran GREEN via manual dispatch (now on the */10 schedule).
+`.github/workflows/collect.yml`
 (*/10 cron + workflow_dispatch, concurrency guard, 8-min timeout, pip cache,
 Python 3.12). `run.py` now returns exit 0 on flaky-source errors (only hard
 errors fail CI). `config.py` `_env()` treats empty secrets as unset so only the
