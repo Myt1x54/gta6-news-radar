@@ -133,6 +133,10 @@ REDDIT_ENGAGEMENT_CAP = 5000  # upvotes + comments
 ARTICLE_RETENTION_DAYS = 60   # delete raw articles older than this
 RANK_RECOMPUTE_MAX_AGE_HOURS = 48  # re-rank stories younger than this each run
 
+# AI enrichment throughput (protects Gemini/Groq free quotas).
+AI_BATCH_SIZE = 6              # stories per AI call
+AI_MAX_STORIES_PER_RUN = 24    # cap enrichment per run; backfill spreads out
+
 
 # ---------------------------------------------------------------------------
 # YouTube trends quota guardrails

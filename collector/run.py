@@ -26,7 +26,13 @@ REDDIT_MIN_INTERVAL = 5.0
 REDDIT_RETRY_SLEEP = 12.0  # wait then retry once on a 429
 
 import db
-from fetchers import fetch_source
+import processing
+from config import AI_BATCH_SIZE, AI_MAX_STORIES_PER_RUN
+from fetchers import (
+    fetch_source,
+    get_reddit_token,
+    reddit_oauth_available,
+)
 from normalize import is_gta6_relevant, normalize_url, url_hash
 from sources import enabled_sources
 
@@ -77,7 +83,7 @@ def build_rows(
     return rows
 
 
-def run(dry_run: bool = False, limit: int | None = None) -> int:
+def run(dry_run: bool = False, limit: int | None = None, no_ai: bool = False) -> int:
     sources = enabled_sources()
     if limit:
         sources = sources[:limit]
@@ -92,13 +98,23 @@ def run(dry_run: bool = False, limit: int | None = None) -> int:
 
     total_candidates = 0
     total_new = 0
+    new_stories = 0
+    ai_calls = 0
     errors: dict[str, str] = {}
 
     # retries=2 helps with flaky TLS/connect errors on some feeds.
     transport = httpx.HTTPTransport(retries=2)
     with httpx.Client(transport=transport, timeout=30) as http:
+        # One Reddit OAuth token per run (reliable + upvote/comment counts).
+        reddit_token = None
+        if reddit_oauth_available():
+            try:
+                reddit_token = get_reddit_token(http)
+                print("  [reddit] OAuth token acquired")
+            except Exception as exc:  # noqa: BLE001 - fall back to .rss
+                print(f"  [reddit] OAuth failed, using .rss fallback: {exc}")
+
         all_rows: list[dict[str, Any]] = []
-        per_source_rows: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
         last_reddit_at = 0.0
         for source in sources:
             sid = name_to_id.get(source["name"])
@@ -108,11 +124,10 @@ def run(dry_run: bool = False, limit: int | None = None) -> int:
                     if wait > 0:
                         time.sleep(wait)
                     last_reddit_at = time.monotonic()
-                    items = _fetch_reddit_with_retry(source, http)
+                    items = _fetch_reddit_with_retry(source, http, reddit_token)
                 else:
                     items = fetch_source(source, http)
                 rows = build_rows(items, source, sid)
-                per_source_rows.append((source, rows))
                 all_rows.extend(rows)
                 total_candidates += len(rows)
                 print(f"  [ok]   {source['name']:<28} {len(items):>3} items -> {len(rows):>3} GTA6")
@@ -132,11 +147,28 @@ def run(dry_run: bool = False, limit: int | None = None) -> int:
             fresh = [r for r in deduped if r["url_hash"] not in already]
             total_new = db.insert_articles(client, fresh)
 
+    # --- Phase 3: cluster -> enrich -> rank -------------------------------
+    reranked = 0
     if not dry_run:
+        print("-" * 60)
+        new_ids, attached = processing.cluster_and_store(client)
+        new_stories = len(new_ids)
+        print(f"clustering: +{new_stories} new stories, {attached} articles joined existing")
+
+        if not no_ai:
+            pending = db.get_unenriched_stories(client, AI_MAX_STORIES_PER_RUN)
+            ai_calls = processing.enrich_new_stories(client, pending, batch_size=AI_BATCH_SIZE)
+            print(f"AI enrichment: {len(pending)} stories -> {ai_calls} AI calls")
+
+        reranked = processing.rerank_recent(client)
+        print(f"ranking: {reranked} stories rescored")
+
         db.finish_run(
             client,
             run_id,
             new_articles=total_new,
+            new_stories=new_stories,
+            ai_calls=ai_calls,
             errors=errors or None,
         )
 
@@ -145,18 +177,21 @@ def run(dry_run: bool = False, limit: int | None = None) -> int:
     if dry_run:
         print("DRY RUN — nothing written to the database.")
     else:
-        print(f"new articles inserted: {total_new}")
+        print(
+            f"new articles: {total_new}  |  new stories: {new_stories}  |  "
+            f"AI calls: {ai_calls}  |  reranked: {reranked}"
+        )
     return 0 if not errors else 1
 
 
-def _fetch_reddit_with_retry(source: dict[str, Any], http: httpx.Client):
+def _fetch_reddit_with_retry(source: dict[str, Any], http: httpx.Client, token: str | None):
     """Fetch a Reddit source, retrying once after a pause on a 429."""
     try:
-        return fetch_source(source, http)
+        return fetch_source(source, http, token)
     except httpx.HTTPStatusError as exc:
         if exc.response is not None and exc.response.status_code == 429:
             time.sleep(REDDIT_RETRY_SLEEP)
-            return fetch_source(source, http)
+            return fetch_source(source, http, token)
         raise
 
 
@@ -176,9 +211,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="GTA 6 News Radar collector")
     ap.add_argument("--dry-run", action="store_true", help="fetch/parse only, no DB writes")
     ap.add_argument("--limit", type=int, default=None, help="only first N enabled sources")
+    ap.add_argument("--no-ai", action="store_true", help="skip AI enrichment (cluster+rank only)")
     args = ap.parse_args()
     try:
-        return run(dry_run=args.dry_run, limit=args.limit)
+        return run(dry_run=args.dry_run, limit=args.limit, no_ai=args.no_ai)
     except Exception:  # noqa: BLE001
         traceback.print_exc()
         return 2

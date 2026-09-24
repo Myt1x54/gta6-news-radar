@@ -9,7 +9,7 @@ package or credentials installed.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
 from config import SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL
@@ -120,3 +120,137 @@ def finish_run(
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+# ---------------------------------------------------------------------------
+# stories / clustering / video_ideas
+# ---------------------------------------------------------------------------
+def get_articles_without_story(client, limit: int = 2000) -> list[dict[str, Any]]:
+    resp = (
+        client.table("articles")
+        .select("id,title,snippet,published_at,source_id,reddit_score,reddit_comments")
+        .is_("story_id", "null")
+        .order("published_at", desc=False)
+        .limit(limit)
+        .execute()
+    )
+    return resp.data
+
+
+def get_recent_stories(client, hours: int) -> list[dict[str, Any]]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    resp = (
+        client.table("stories")
+        .select("id,headline,first_seen_at,last_updated_at")
+        .gte("first_seen_at", cutoff)
+        .execute()
+    )
+    return resp.data
+
+
+def source_credibility_map(client) -> dict[int, dict[str, Any]]:
+    resp = client.table("sources").select("id,name,credibility").execute()
+    return {r["id"]: r for r in resp.data}
+
+
+def create_story(client, fields: dict[str, Any]) -> str:
+    resp = client.table("stories").insert(fields).execute()
+    return resp.data[0]["id"]
+
+
+def update_story(client, story_id: str, fields: dict[str, Any]) -> None:
+    client.table("stories").update(fields).eq("id", story_id).execute()
+
+
+def set_article_story(client, article_ids: list[int], story_id: str) -> None:
+    if not article_ids:
+        return
+    for i in range(0, len(article_ids), 100):
+        chunk = article_ids[i : i + 100]
+        client.table("articles").update({"story_id": story_id}).in_("id", chunk).execute()
+
+
+def insert_video_ideas(
+    client, story_id: str, ideas: list[Any], generated_on_demand: bool = False
+) -> None:
+    rows = [
+        {
+            "story_id": story_id,
+            "title": idea.title,
+            "hook": idea.hook,
+            "format": idea.format,
+            "angle": idea.angle,
+            "generated_on_demand": generated_on_demand,
+        }
+        for idea in ideas
+    ]
+    if rows:
+        client.table("video_ideas").insert(rows).execute()
+
+
+def get_used_rejected(client, limit: int = 30) -> list[dict[str, Any]]:
+    resp = (
+        client.table("stories")
+        .select("headline,category,status")
+        .in_("status", ["used", "rejected"])
+        .order("last_updated_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return resp.data
+
+
+def aggregate_story_signals(
+    client, story_ids: list[str], cred_map: dict[int, dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    """For each story, aggregate distinct source count, summed Reddit
+    engagement, and best source credibility from its articles."""
+    agg: dict[str, dict[str, Any]] = {}
+    if not story_ids:
+        return agg
+    for i in range(0, len(story_ids), 100):
+        chunk = story_ids[i : i + 100]
+        resp = (
+            client.table("articles")
+            .select("story_id,source_id,reddit_score,reddit_comments")
+            .in_("story_id", chunk)
+            .execute()
+        )
+        for r in resp.data:
+            sid = r["story_id"]
+            a = agg.setdefault(
+                sid,
+                {"source_ids": set(), "reddit_score": 0, "reddit_comments": 0, "best_cred": 0.0},
+            )
+            a["source_ids"].add(r["source_id"])
+            a["reddit_score"] += r.get("reddit_score") or 0
+            a["reddit_comments"] += r.get("reddit_comments") or 0
+            cred = (cred_map.get(r["source_id"]) or {}).get("credibility") or 0.0
+            a["best_cred"] = max(a["best_cred"], float(cred))
+    for a in agg.values():
+        a["source_count"] = len(a["source_ids"])
+    return agg
+
+
+def get_unenriched_stories(client, limit: int) -> list[str]:
+    """Stories that haven't been AI-enriched yet (newest first)."""
+    resp = (
+        client.table("stories")
+        .select("id")
+        .is_("ai_model_used", "null")
+        .order("first_seen_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return [r["id"] for r in resp.data]
+
+
+def get_stories_for_rerank(client, hours: int) -> list[dict[str, Any]]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    resp = (
+        client.table("stories")
+        .select("id,video_score,credibility,first_seen_at")
+        .gte("first_seen_at", cutoff)
+        .execute()
+    )
+    return resp.data

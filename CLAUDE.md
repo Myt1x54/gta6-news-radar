@@ -123,13 +123,24 @@ Phase 2 done:
   filtering/dedupe.
 - **Dry-run result:** ~389 GTA6 candidates from 20 enabled sources.
 
-**Next — Phase 3 (Clustering + AI enrichment).** Blocked on: (a) user finishing
-Supabase setup so we can insert/read articles live, and (b) Gemini + Groq API
-keys (README Steps 3–4). Then: cluster articles→stories (rapidfuzz 85 / 48h),
-Gemini enrichment w/ Groq fallback, pydantic JSON validation, rank_score.
+**Phase 3 (Clustering + AI enrichment + ranking) — COMPLETE & VERIFIED LIVE**
+(2026-09-25). Live run: 318 articles → 293 stories, 24 enriched via
+`gemini:gemini-3.5-flash-lite`, 45 video ideas, ranked (top 62.3). New modules:
+- `collector/clustering.py` — rapidfuzz title clustering (assign_clusters).
+- `collector/ranking.py` — weighted rank_score + freshness half-life.
+- `collector/ai/` — schema.py (pydantic), prompt.py, providers.py (gemini/groq
+  lazy), enrich.py (fallback + retry-once + JSON validation).
+- `collector/processing.py` — DB stages: cluster_and_store, enrich_new_stories,
+  rerank_recent.
+- `run.py` extended: after insert → cluster → enrich (cap 24/run) → rerank.
+  New flag `--no-ai`. Reddit OAuth wired (uses token if creds present, else .rss).
+- 31 tests total, all passing.
 
-**To run the collector live once Supabase is set:** put SUPABASE_URL +
-SUPABASE_SERVICE_ROLE_KEY in `.env`, then `python collector/run.py`.
+**Next — Phase 4 (GitHub Actions cron).** Wrap `run.py` in `.github/workflows/
+collect.yml` (*/10), inject secrets. Then Phase 5 (dashboard).
+
+**To run the collector live:** `python collector/run.py` (add `--no-ai` to skip
+enrichment). AI backfill spreads 24 stories/run until all are enriched.
 
 ## Decisions Log
 
@@ -174,6 +185,13 @@ SUPABASE_SERVICE_ROLE_KEY in `.env`, then `python collector/run.py`.
       Reddit OAuth (free "script" app)** → reliable access + restores upvote/
       comment counts. Recommended as first task of Phase 3. Needs user to create
       the app (REDDIT_CLIENT_ID/SECRET).
+- [ ] **Clustering under-merges** (Phase 3): cross-outlet coverage of the SAME
+      event often splits into separate stories because paraphrased titles score
+      below the 85 rapidfuzz threshold (e.g. "$400 set" vs "£349.99 box"). Fix
+      options: lower threshold carefully, add key-entity/number matching, or the
+      brief's suggested AI tie-breaker for borderline pairs. Tune in Phase 8.
+- [ ] **Reddit OAuth coded but not yet live-tested** — activates when the user
+      adds REDDIT_CLIENT_ID/SECRET. Falls back to .rss until then.
 - [ ] **Kotaku feed** SSL-handshake-times-out from the dev sandbox; likely a
       local network quirk — recheck on GitHub Actions, disable if it persists.
 - [ ] **YouTube channel filtering:** broad channels (GTA Series Videos, TGG,

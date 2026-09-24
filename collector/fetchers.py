@@ -23,7 +23,7 @@ from typing import Any
 
 import feedparser
 
-from config import USER_AGENT
+from config import REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, USER_AGENT
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
@@ -95,17 +95,54 @@ def parse_reddit(payload: str | bytes | dict[str, Any]) -> list[dict[str, Any]]:
     return items
 
 
-def fetch_source(source: dict[str, Any], client) -> list[dict[str, Any]]:
+def reddit_oauth_available() -> bool:
+    return bool(REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET)
+
+
+def get_reddit_token(client) -> str:
+    """App-only OAuth (client_credentials). Returns a bearer token."""
+    resp = client.post(
+        "https://www.reddit.com/api/v1/access_token",
+        data={"grant_type": "client_credentials"},
+        auth=(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET),
+        headers={"User-Agent": USER_AGENT},
+        timeout=25,
+    )
+    resp.raise_for_status()
+    return resp.json()["access_token"]
+
+
+def _to_oauth_url(url: str) -> str:
+    """Turn a public reddit listing URL into its oauth.reddit.com JSON form."""
+    url = url.replace("www.reddit.com", "oauth.reddit.com").replace(
+        "old.reddit.com", "oauth.reddit.com"
+    )
+    return url.replace("/.rss", "/.json").replace(".rss?", ".json?")
+
+
+def fetch_source(source: dict[str, Any], client, reddit_token: str | None = None) -> list[dict[str, Any]]:
     """Fetch one source over HTTP and parse it into items.
 
-    ``client`` is an ``httpx.Client``. Raises on HTTP errors so the caller can
-    record source health.
+    ``client`` is an ``httpx.Client``. If ``reddit_token`` is given, Reddit
+    sources are fetched via the authenticated JSON API (reliable + engagement
+    counts); otherwise they fall back to the open .rss feed. Raises on HTTP
+    errors so the caller can record source health.
     """
     stype = source["type"]
     if stype == "html":
         # No HTML-scraping sources are enabled yet; add trafilatura here when
         # a feed-less source is introduced (see PROJECT_BRIEF §5).
         return []
+
+    if stype == "reddit" and reddit_token:
+        resp = client.get(
+            _to_oauth_url(source["url"]),
+            headers={"User-Agent": USER_AGENT, "Authorization": f"bearer {reddit_token}"},
+            timeout=25,
+            follow_redirects=True,
+        )
+        resp.raise_for_status()
+        return parse_reddit(resp.json())
 
     resp = client.get(
         source["url"],
@@ -116,9 +153,8 @@ def fetch_source(source: dict[str, Any], client) -> list[dict[str, Any]]:
     resp.raise_for_status()
 
     if stype == "reddit":
-        # Reddit's .json endpoints are blocked for many datacenter IPs (bot
-        # wall), but the .rss feeds are open. We support both: .rss loses the
-        # upvote/comment counts (added later via Reddit OAuth), .json keeps them.
+        # Fallback: .rss is open but omits upvote/comment counts; .json is
+        # bot-walled for datacenter IPs.
         if ".rss" in source["url"]:
             return parse_feed(resp.content)
         return parse_reddit(resp.json())
