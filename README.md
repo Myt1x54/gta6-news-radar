@@ -129,11 +129,32 @@ The collector runs on GitHub Actions via [`.github/workflows/collect.yml`](.gith
 > **pauses schedules after 60 days with no repo commits** (just push anything to
 > resume). Scheduled runs can be delayed a few minutes at peak times — expected.
 
-### Step 8 — Cloudflare Pages (dashboard hosting, Phase 5)
+### Step 8 — Deploy the dashboard to Vercel (Phase 5)
 
-Deferred until the web app exists. You'll connect the GitHub repo to Cloudflare
-Pages and set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` as
-build env vars there. Instructions will be added in Phase 5.
+We deploy the Next.js dashboard to **Vercel** (free Hobby tier, no card). It runs
+Next.js natively — no adapter needed. The app deliberately uses **no Vercel-only
+features**, so it stays portable. (If you ever move to Cloudflare, use the
+OpenNext adapter `@opennextjs/cloudflare` — not the deprecated
+`@cloudflare/next-on-pages`.)
+
+1. Make sure your latest code (the `web/` app) is **pushed to GitHub**.
+2. Go to <https://vercel.com> → sign in **with GitHub** (free, no card).
+3. **Add New… → Project** → **Import** your `gta6-news-radar` repo.
+4. In the import screen:
+   - **Root Directory:** click **Edit** and set it to **`web`** (important — the
+     Next app lives in the `web/` subfolder).
+   - Framework preset auto-detects **Next.js**. Leave build/output defaults.
+5. Expand **Environment Variables** and add the two public frontend vars (copy
+   values from `web/.env.local`):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+6. Click **Deploy**. After ~1–2 min you get a live URL like
+   `https://gta6-news-radar.vercel.app`. Open it and log in with your Supabase
+   account.
+
+> Every future `git push` to the default branch auto-deploys. The service-role
+> key is **never** in the frontend — only the public anon key, with RLS enforcing
+> access.
 
 ---
 

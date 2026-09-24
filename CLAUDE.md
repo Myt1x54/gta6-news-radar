@@ -190,6 +190,16 @@ enrichment). AI backfill spreads 24 stories/run until all are enriched.
 - **2026-09-24 — Rockstar Newswire RSS disabled** — no public feed exists
   anymore (all URLs 404). Official news covered via Rockstar's YouTube + Google
   News searches.
+- **2026-09-25 — Frontend host: Vercel instead of Cloudflare Pages** (deviates
+  from the brief). Why: the dashboard is a server-rendered Next.js App Router app
+  (SSR + auth middleware/proxy + cookies). Vercel runs Next.js natively — one
+  import from GitHub, zero config, free Hobby tier is plenty for 1–2 users.
+  Cloudflare Pages would need an SSR adapter + Edge-runtime tweaks (more setup
+  and gotchas). Constraint from user: **keep the app free of Vercel-only
+  features** (no Vercel KV/Blob/Edge Config/Cron/Analytics) so relocating stays
+  easy — it currently uses none. **If we ever move to Cloudflare, use the
+  OpenNext adapter `@opennextjs/cloudflare`, NOT the deprecated
+  `@cloudflare/next-on-pages`.**
 - **2026-09-24 — Reddit uses `.rss` not `.json`** — `.json` is bot-walled for
   datacenter IPs (403/HTML interstitial). `.rss` works but omits upvote/comment
   counts. Engagement will be added later via free Reddit OAuth (script app).
