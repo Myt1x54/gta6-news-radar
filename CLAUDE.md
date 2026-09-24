@@ -164,7 +164,9 @@ SUPABASE_SERVICE_ROLE_KEY in `.env`, then `python collector/run.py`.
       Videos, TGG, GhillieMaster, MrBossFTW, Broughy1322, DarkViperAU. Channel IDs
       resolved from each channel page. **Tez2 skipped** — @Tez2 on YouTube is an
       unrelated channel ("jasmineee"); the GTA leaker Tez2 is on X, not YouTube.
-- [ ] **Verify Groq free model name** (`GROQ_MODEL`) before Phase 3.
+- [x] **Groq model verified** (2026-09-24 via models API): `llama-3.3-70b-versatile`
+      is gone. Available chat models: `openai/gpt-oss-120b` (chosen default),
+      `openai/gpt-oss-20b`, `qwen/qwen3.8-27b`. Set in .env + config default.
 - [x] Confirmed feed URLs resolve (Phase 2 dry-run). Exceptions below.
 - [ ] **Reddit reliability (CONFIRMED problem):** even with a 5s throttle + 429
       retry, the live run got only 1 of 3 Reddit feeds (others 403/429). Reddit
