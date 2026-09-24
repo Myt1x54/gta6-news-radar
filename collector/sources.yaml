@@ -1,0 +1,111 @@
+# ============================================================================
+# News sources for the GTA 6 News Radar collector.
+# Edit this file to add / remove / disable sources. No code change needed.
+#
+# Fields per source:
+#   name        Human-readable label (shown in dashboard).
+#   url         Feed / endpoint URL.
+#   type        rss | reddit | google_news | youtube_rss | html
+#   credibility 0.0 - 1.0  (how trustworthy the outlet is)
+#   enabled     true | false
+#
+# NOTE: youtube_rss channel feeds are placeholders. The creator will supply
+#       the real channel list later. To add one, use:
+#       https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID
+# ============================================================================
+
+sources:
+  # ---- Official ------------------------------------------------------------
+  - name: Rockstar Newswire
+    url: https://www.rockstargames.com/newswire.rss
+    type: rss
+    credibility: 1.0
+    enabled: true
+
+  # ---- Major gaming outlets (RSS, filtered to GTA 6 downstream) ------------
+  - name: IGN
+    url: https://feeds.ign.com/ign/all
+    type: rss
+    credibility: 0.8
+    enabled: true
+
+  - name: GameSpot
+    url: https://www.gamespot.com/feeds/news/
+    type: rss
+    credibility: 0.8
+    enabled: true
+
+  - name: Eurogamer
+    url: https://www.eurogamer.net/feed
+    type: rss
+    credibility: 0.8
+    enabled: true
+
+  - name: VGC (Video Games Chronicle)
+    url: https://www.videogameschronicle.com/feed/
+    type: rss
+    credibility: 0.85
+    enabled: true
+
+  - name: Kotaku
+    url: https://kotaku.com/rss
+    type: rss
+    credibility: 0.7
+    enabled: true
+
+  - name: PC Gamer
+    url: https://www.pcgamer.com/rss/
+    type: rss
+    credibility: 0.75
+    enabled: true
+
+  - name: GamesRadar
+    url: https://www.gamesradar.com/rss/
+    type: rss
+    credibility: 0.75
+    enabled: true
+
+  # ---- Google News RSS searches -------------------------------------------
+  - name: Google News - GTA 6
+    url: https://news.google.com/rss/search?q=%22GTA%206%22&hl=en-US&gl=US&ceid=US:en
+    type: google_news
+    credibility: 0.5
+    enabled: true
+
+  - name: Google News - GTA VI
+    url: https://news.google.com/rss/search?q=%22GTA%20VI%22&hl=en-US&gl=US&ceid=US:en
+    type: google_news
+    credibility: 0.5
+    enabled: true
+
+  - name: Google News - Grand Theft Auto VI
+    url: https://news.google.com/rss/search?q=%22Grand%20Theft%20Auto%20VI%22&hl=en-US&gl=US&ceid=US:en
+    type: google_news
+    credibility: 0.5
+    enabled: true
+
+  # ---- Reddit --------------------------------------------------------------
+  - name: r/GTA6 - new
+    url: https://www.reddit.com/r/GTA6/new/.json?limit=50
+    type: reddit
+    credibility: 0.4
+    enabled: true
+
+  - name: r/GTA6 - hot
+    url: https://www.reddit.com/r/GTA6/hot/.json?limit=50
+    type: reddit
+    credibility: 0.4
+    enabled: true
+
+  - name: r/GTA - new
+    url: https://www.reddit.com/r/GTA/new/.json?limit=50
+    type: reddit
+    credibility: 0.35
+    enabled: true
+
+  # ---- YouTube creator channel RSS feeds (PLACEHOLDERS - to be filled) -----
+  # - name: Example Creator
+  #   url: https://www.youtube.com/feeds/videos.xml?channel_id=UCxxxxxxxxxxxxxxxx
+  #   type: youtube_rss
+  #   credibility: 0.5
+  #   enabled: true
