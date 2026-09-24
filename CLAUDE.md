@@ -238,6 +238,14 @@ enrichment). AI backfill spreads 24 stories/run until all are enriched.
       pairs (user to decide; adds AI cost/complexity).
 - [ ] **Reddit OAuth coded but not yet live-tested** — activates when the user
       adds REDDIT_CLIENT_ID/SECRET. Falls back to .rss until then.
+- [ ] **VERIFY TOMORROW: is the */10 cron actually firing?** As of 2026-09-24
+      20:43 UTC, the `runs` table had only 3 rows (our manual/test runs), none in
+      the prior ~66 min — the scheduled `collect` cron had not fired yet. The
+      manual workflow_dispatch run (19:36 UTC) went green, so the workflow is
+      correct; GitHub commonly delays first scheduled runs on new repos. Check
+      the repo Actions tab for "Scheduled" collect runs ~every 10 min. If still
+      absent: confirm Actions enabled, check for GitHub disabling the schedule,
+      or push a commit to nudge it.
 - [ ] **web dev server must use webpack, not Turbopack** on this machine. Next 16
       Turbopack DEV fails to resolve `@swc/helpers/_/_interop_require_*` (500s),
       while the production `next build` (also Turbopack) resolves them fine.
