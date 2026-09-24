@@ -51,6 +51,9 @@ ALERT_TO = os.getenv("ALERT_TO", "")
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
 
+REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID", "")
+REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET", "")
+
 USER_AGENT = os.getenv(
     "USER_AGENT",
     "GTA6NewsRadar/0.1 (+https://github.com/YOUR_USERNAME/gta6-news-radar)",
