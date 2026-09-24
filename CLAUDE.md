@@ -102,9 +102,11 @@ reach the browser.
 
 ## Current Status
 
-**Phase 1 (Setup) — COMPLETE.** **Phase 2 (Collector v1) — CODE COMPLETE**,
-verified via `--dry-run` against live feeds; live DB insert is pending the user's
-Supabase project.
+**Phase 1 (Setup) — COMPLETE.** **Phase 2 (Collector v1) — COMPLETE & VERIFIED
+LIVE.** On 2026-09-24 a live run inserted **318 articles** into Supabase, synced
+20 sources, and logged the run. Supabase project ref: `zudiuiezmcqxwsdnsbpb`.
+User's `.env` has SUPABASE_URL + service_role + anon keys. `supabase` pip pkg
+installed locally.
 
 Phase 2 done:
 - `collector/normalize.py` — URL normalization, url_hash, GTA6 keyword filter
@@ -164,10 +166,12 @@ SUPABASE_SERVICE_ROLE_KEY in `.env`, then `python collector/run.py`.
       unrelated channel ("jasmineee"); the GTA leaker Tez2 is on X, not YouTube.
 - [ ] **Verify Groq free model name** (`GROQ_MODEL`) before Phase 3.
 - [x] Confirmed feed URLs resolve (Phase 2 dry-run). Exceptions below.
-- [ ] **Reddit reliability:** `.rss` works but Reddit rate-limits (429) bursts
-      from datacenter IPs; GitHub Actions may hit this too. Best-effort throttle
-      + 1 retry in place. Proper fix = Reddit OAuth (free script app) → also
-      restores upvote/comment counts. Do before/with Phase 3 ranking.
+- [ ] **Reddit reliability (CONFIRMED problem):** even with a 5s throttle + 429
+      retry, the live run got only 1 of 3 Reddit feeds (others 403/429). Reddit
+      blocks datacenter IPs hard; GitHub Actions will be worse. **Proper fix =
+      Reddit OAuth (free "script" app)** → reliable access + restores upvote/
+      comment counts. Recommended as first task of Phase 3. Needs user to create
+      the app (REDDIT_CLIENT_ID/SECRET).
 - [ ] **Kotaku feed** SSL-handshake-times-out from the dev sandbox; likely a
       local network quirk — recheck on GitHub Actions, disable if it persists.
 - [ ] **YouTube channel filtering:** broad channels (GTA Series Videos, TGG,
