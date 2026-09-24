@@ -16,11 +16,15 @@
 
 sources:
   # ---- Official ------------------------------------------------------------
+  # Rockstar Newswire no longer publishes a public RSS feed (all known URLs
+  # 404 as of 2026-09-24). Official news is covered via the Rockstar Games
+  # YouTube feed (below) and the Google News searches. Re-enable if a feed
+  # URL is found.
   - name: Rockstar Newswire
     url: https://www.rockstargames.com/newswire.rss
     type: rss
     credibility: 1.0
-    enabled: true
+    enabled: false
 
   # ---- Major gaming outlets (RSS, filtered to GTA 6 downstream) ------------
   - name: IGN
@@ -85,20 +89,22 @@ sources:
     enabled: true
 
   # ---- Reddit --------------------------------------------------------------
+  # Using .rss (open) instead of .json (blocked for datacenter IPs). This loses
+  # upvote/comment counts; those will be added later via free Reddit OAuth.
   - name: r/GTA6 - new
-    url: https://www.reddit.com/r/GTA6/new/.json?limit=50
+    url: https://www.reddit.com/r/GTA6/new/.rss?limit=50
     type: reddit
     credibility: 0.4
     enabled: true
 
   - name: r/GTA6 - hot
-    url: https://www.reddit.com/r/GTA6/hot/.json?limit=50
+    url: https://www.reddit.com/r/GTA6/hot/.rss?limit=50
     type: reddit
     credibility: 0.4
     enabled: true
 
   - name: r/GTA - new
-    url: https://www.reddit.com/r/GTA/new/.json?limit=50
+    url: https://www.reddit.com/r/GTA/new/.rss?limit=50
     type: reddit
     credibility: 0.35
     enabled: true

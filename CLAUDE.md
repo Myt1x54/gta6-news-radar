@@ -102,23 +102,32 @@ reach the browser.
 
 ## Current Status
 
-**Phase 1 (Setup) — COMPLETE, pending user's manual account setup + review.**
+**Phase 1 (Setup) — COMPLETE.** **Phase 2 (Collector v1) — CODE COMPLETE**,
+verified via `--dry-run` against live feeds; live DB insert is pending the user's
+Supabase project.
 
-Done:
-- Repo initialized (git), directory structure created.
-- `CLAUDE.md`, `README.md`, `.env.example`, `.gitignore`.
-- `docs/PROJECT_BRIEF.md` (verbatim brief).
-- `collector/sources.yaml` (start sources; YouTube channels are placeholders).
-- `collector/config.py` (env loading, keyword filters, ranking weights, thresholds).
-- `collector/requirements.txt`.
-- `supabase/migrations/0001_initial_schema.sql` (all 7 tables + RLS + settings seed).
+Phase 2 done:
+- `collector/normalize.py` — URL normalization, url_hash, GTA6 keyword filter
+  (boundary-safe regex; "gta vi" won't match "gta vice city").
+- `collector/fetchers.py` — `parse_feed` (rss/google_news/youtube_rss),
+  `parse_reddit`, `fetch_source` (reddit supports both .rss and .json).
+- `collector/sources.py` — load/validate sources.yaml.
+- `collector/db.py` — Supabase service-role client, sync_sources, dedupe by
+  url_hash, insert_articles (upsert), runs logging, source health.
+- `collector/run.py` — orchestrator: fetch → relevance filter → normalize →
+  dedupe (in-run + vs DB) → insert. Flags: `--dry-run`, `--limit N`. Reddit
+  politeness delay + 429 retry.
+- Tests (15, all passing): normalize/relevance, feed+reddit parsing, build_rows
+  filtering/dedupe.
+- **Dry-run result:** ~389 GTA6 candidates from 20 enabled sources.
 
-**Next (before Phase 2):** the USER must do the manual setup steps in the README
-(create Supabase project, run migration, create AI/YouTube keys, Gmail App
-Password, GitHub repo + Secrets) and hand over the YouTube creator channel list.
+**Next — Phase 3 (Clustering + AI enrichment).** Blocked on: (a) user finishing
+Supabase setup so we can insert/read articles live, and (b) Gemini + Groq API
+keys (README Steps 3–4). Then: cluster articles→stories (rapidfuzz 85 / 48h),
+Gemini enrichment w/ Groq fallback, pydantic JSON validation, rank_score.
 
-**Then Phase 2 (Collector v1):** implement fetching per source type → normalize
-→ `articles` → URL dedupe, runnable locally, with tests for feed parsing + dedupe.
+**To run the collector live once Supabase is set:** put SUPABASE_URL +
+SUPABASE_SERVICE_ROLE_KEY in `.env`, then `python collector/run.py`.
 
 ## Decisions Log
 
@@ -135,6 +144,16 @@ Password, GitHub repo + Secrets) and hand over the YouTube creator channel list.
 - **2026-09-24 — Ranking weights + freshness half-life live in `collector/config.py`
   AND mirrored in the `settings` table** (so the dashboard can eventually tune
   them without a deploy). config.py holds the code defaults for now.
+- **2026-09-24 — `collector/email/` renamed to `collector/emailer/`** (Phase 2).
+  Because run.py is run as a script, `collector/` goes on sys.path and a folder
+  named `email` shadows Python's stdlib `email`, breaking httpx. Deviates from
+  the brief's suggested name for correctness.
+- **2026-09-24 — Rockstar Newswire RSS disabled** — no public feed exists
+  anymore (all URLs 404). Official news covered via Rockstar's YouTube + Google
+  News searches.
+- **2026-09-24 — Reddit uses `.rss` not `.json`** — `.json` is bot-walled for
+  datacenter IPs (403/HTML interstitial). `.rss` works but omits upvote/comment
+  counts. Engagement will be added later via free Reddit OAuth (script app).
 
 ## Known Issues / TODO
 
@@ -144,8 +163,18 @@ Password, GitHub repo + Secrets) and hand over the YouTube creator channel list.
       resolved from each channel page. **Tez2 skipped** — @Tez2 on YouTube is an
       unrelated channel ("jasmineee"); the GTA leaker Tez2 is on X, not YouTube.
 - [ ] **Verify Groq free model name** (`GROQ_MODEL`) before Phase 3.
-- [ ] Confirm each RSS feed URL in `sources.yaml` actually resolves (Phase 2).
-- [ ] Pin/verify Python dep versions install cleanly on 3.12 (Phase 2).
+- [x] Confirmed feed URLs resolve (Phase 2 dry-run). Exceptions below.
+- [ ] **Reddit reliability:** `.rss` works but Reddit rate-limits (429) bursts
+      from datacenter IPs; GitHub Actions may hit this too. Best-effort throttle
+      + 1 retry in place. Proper fix = Reddit OAuth (free script app) → also
+      restores upvote/comment counts. Do before/with Phase 3 ranking.
+- [ ] **Kotaku feed** SSL-handshake-times-out from the dev sandbox; likely a
+      local network quirk — recheck on GitHub Actions, disable if it persists.
+- [ ] **YouTube channel filtering:** broad channels (GTA Series Videos, TGG,
+      MrBossFTW) often yield 0 GTA6 items via keyword filter; that's expected.
+      Competitor-upload tracking (all uploads) is a separate Phase 7 flow.
+- [ ] Pin/verify Python dep versions install cleanly on 3.12 in CI (dev machine
+      runs 3.14, which works).
 - [ ] Decide serverless host for "Generate more ideas" (Cloudflare Pages Function
       vs Supabase Edge Function) in Phase 8.
 ```
