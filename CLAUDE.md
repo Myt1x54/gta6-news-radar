@@ -147,7 +147,8 @@ errors fail CI). `config.py` `_env()` treats empty secrets as unset so only the
 GEMINI_API_KEY, GROQ_API_KEY). README Step 7 has exact secret list + how to test
 via the Actions "Run workflow" button.
 
-**Phase 5 (Dashboard) — BUILT, pending user login check + Cloudflare deploy.**
+**Phase 5 (Dashboard) — BUILT & VERIFIED LIVE** (login, ranked feed, story
+detail all render with real data via the preview). Pending: Cloudflare deploy.
 `web/` = Next.js 16 (App Router) + React 19 + Tailwind 4 + TypeScript. Uses
 `@supabase/ssr` (browser client `lib/supabase/client.ts`, server client
 `lib/supabase/server.ts`, `proxy.ts` for session refresh + route gating —
@@ -221,6 +222,19 @@ enrichment). AI backfill spreads 24 stories/run until all are enriched.
       pairs (user to decide; adds AI cost/complexity).
 - [ ] **Reddit OAuth coded but not yet live-tested** — activates when the user
       adds REDDIT_CLIENT_ID/SECRET. Falls back to .rss until then.
+- [ ] **web dev server must use webpack, not Turbopack** on this machine. Next 16
+      Turbopack DEV fails to resolve `@swc/helpers/_/_interop_require_*` (500s),
+      while the production `next build` (also Turbopack) resolves them fine.
+      `.claude/launch.json` runs `next dev --webpack`. Cloudflare uses the
+      production build, so deploy is unaffected. Root cause looks like a
+      Turbopack-dev + @swc/helpers exports bug (not our code).
+- [ ] **npm on this machine occasionally extracts packages incompletely**
+      (hit missing next type files + apparent @swc/helpers gaps). Fix when seen:
+      `npm cache clean --force` + delete node_modules + `npm install`.
+- [ ] **Hydration warning in the user's Opera** (`MetadataWrapper hidden`) is
+      browser-extension interference (dev overlay only). The one real risk —
+      relative timestamps using Date.now() — is fixed via `components/TimeAgo.tsx`
+      (client-only render).
 - [ ] **Kotaku feed** SSL-handshake-times-out from the dev sandbox; likely a
       local network quirk — recheck on GitHub Actions, disable if it persists.
 - [ ] **YouTube channel filtering:** broad channels (GTA Series Videos, TGG,

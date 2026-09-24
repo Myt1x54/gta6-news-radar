@@ -3,14 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Story, VideoIdea } from "@/lib/types";
-import {
-  categoryStyle,
-  labelize,
-  rankColor,
-  statusStyle,
-  timeAgo,
-} from "@/lib/ui";
+import { categoryStyle, labelize, rankColor, statusStyle } from "@/lib/ui";
 import StatusControl from "./StatusControl";
+import TimeAgo from "./TimeAgo";
 
 function Badge({
   children,
@@ -48,7 +43,7 @@ export default function StoryCard({
           )}
           <Badge className={statusStyle[story.status]}>{story.status}</Badge>
           <span className="text-xs text-zinc-500">
-            {story.source_count} src · {timeAgo(story.first_seen_at)}
+            {story.source_count} src · <TimeAgo iso={story.first_seen_at} />
           </span>
         </div>
         <div className={`text-right ${rankColor(story.rank_score)}`}>
