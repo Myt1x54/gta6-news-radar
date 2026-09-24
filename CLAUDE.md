@@ -139,7 +139,10 @@ Password, GitHub repo + Secrets) and hand over the YouTube creator channel list.
 ## Known Issues / TODO
 
 - [ ] **User manual setup** not done yet (Supabase, keys, secrets) — see README §Setup.
-- [ ] **YouTube creator channel list** pending from user → add to `sources.yaml`.
+- [x] **YouTube creator channels added** (2026-09-24): Rockstar Games, GTA Series
+      Videos, TGG, GhillieMaster, MrBossFTW, Broughy1322, DarkViperAU. Channel IDs
+      resolved from each channel page. **Tez2 skipped** — @Tez2 on YouTube is an
+      unrelated channel ("jasmineee"); the GTA leaker Tez2 is on X, not YouTube.
 - [ ] **Verify Groq free model name** (`GROQ_MODEL`) before Phase 3.
 - [ ] Confirm each RSS feed URL in `sources.yaml` actually resolves (Phase 2).
 - [ ] Pin/verify Python dep versions install cleanly on 3.12 (Phase 2).

@@ -103,9 +103,56 @@ sources:
     credibility: 0.35
     enabled: true
 
-  # ---- YouTube creator channel RSS feeds (PLACEHOLDERS - to be filled) -----
-  # - name: Example Creator
-  #   url: https://www.youtube.com/feeds/videos.xml?channel_id=UCxxxxxxxxxxxxxxxx
+  # ---- YouTube creator channel RSS feeds -----------------------------------
+  # channel_id values resolved from each channel's page on 2026-09-24.
+  # To add more: https://www.youtube.com/feeds/videos.xml?channel_id=UC...
+  - name: Rockstar Games (YouTube)
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UCULwHhkI31JHAKe57LZdzcA
+    type: youtube_rss
+    credibility: 1.0
+    enabled: true
+
+  - name: GTA Series Videos
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UCrniLr5HDebHfskhSSAAt0A
+    type: youtube_rss
+    credibility: 0.6
+    enabled: true
+
+  - name: TGG
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UChLDRvS2OeJ0f5Xi2j7uofA
+    type: youtube_rss
+    credibility: 0.5
+    enabled: true
+
+  - name: GhillieMaster
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UC1PhTs67PPip_Ys0_xmk8Bg
+    type: youtube_rss
+    credibility: 0.5
+    enabled: true
+
+  - name: MrBossFTW
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UC6JFh1IxySYXhQKMc7EQBsQ
+    type: youtube_rss
+    credibility: 0.4
+    enabled: true
+
+  - name: Broughy1322
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UCcZ3sRk9z6jjgfYQbMGTpig
+    type: youtube_rss
+    credibility: 0.6
+    enabled: true
+
+  - name: DarkViperAU
+    url: https://www.youtube.com/feeds/videos.xml?channel_id=UCV6mNrW8CrmWtcxWfQXy11g
+    type: youtube_rss
+    credibility: 0.6
+    enabled: true
+
+  # Tez2 — SKIPPED: the YouTube handle @Tez2 belongs to an unrelated channel
+  # ("jasmineee"). Tez2 the GTA leaker is active on X/Twitter (@TezFunz2), not
+  # YouTube. If you find their real channel_id, uncomment and fill it in:
+  # - name: Tez2
+  #   url: https://www.youtube.com/feeds/videos.xml?channel_id=UC...
   #   type: youtube_rss
-  #   credibility: 0.5
+  #   credibility: 0.6
   #   enabled: true
