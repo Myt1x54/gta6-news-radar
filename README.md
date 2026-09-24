@@ -97,14 +97,37 @@ rest can wait until their phase.
 
 ### Step 7 — GitHub repo + Secrets (scheduler, Phase 4)
 
-1. Push this repo to a **public** GitHub repo (free unlimited Actions minutes).
+The collector runs on GitHub Actions via [`.github/workflows/collect.yml`](.github/workflows/collect.yml)
+(every 10 minutes). To enable it:
+
+1. **Push this repo to a PUBLIC GitHub repo** (public = free unlimited Actions
+   minutes). Make sure `.env` is NOT committed (it's gitignored — verify with
+   `git status`).
 2. In the repo: **Settings → Secrets and variables → Actions → New repository
-   secret**. Add one secret per variable in `.env` (same names):
-   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`,
-   `GROQ_API_KEY`, `GROQ_MODEL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
-   `SMTP_PASS`, `ALERT_TO`, `YOUTUBE_API_KEY`, `USER_AGENT`, `APP_TIMEZONE`,
-   `ALERT_THRESHOLD`.
-   *(You do NOT need `SUPABASE_ANON_KEY` in Actions — that's for the frontend.)*
+   secret**. Add these:
+
+   **Required** (the collector won't work without them):
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `GEMINI_API_KEY`
+   - `GROQ_API_KEY`
+
+   **Optional** (only if you set up that source / want to override a default):
+   - `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` (if you did the Reddit app)
+   - `YOUTUBE_API_KEY` (used from Phase 7)
+   - `GEMINI_MODEL`, `GROQ_MODEL`, `USER_AGENT`, `APP_TIMEZONE`, `ALERT_THRESHOLD`
+     (all have sensible defaults in code — only add to override)
+
+   *(You do NOT need `SUPABASE_ANON_KEY` or the `SMTP_*` secrets here yet — anon
+   is for the frontend; SMTP is added in Phase 6.)*
+
+3. **Test it now:** go to the **Actions** tab → **collect** workflow → **Run
+   workflow** (manual trigger). Watch it run green, then check new rows in your
+   Supabase tables.
+
+> Notes: GitHub only runs `schedule:` workflows on the **default branch**, and it
+> **pauses schedules after 60 days with no repo commits** (just push anything to
+> resume). Scheduled runs can be delayed a few minutes at peak times — expected.
 
 ### Step 8 — Cloudflare Pages (dashboard hosting, Phase 5)
 

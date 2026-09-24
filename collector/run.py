@@ -181,7 +181,10 @@ def run(dry_run: bool = False, limit: int | None = None, no_ai: bool = False) ->
             f"new articles: {total_new}  |  new stories: {new_stories}  |  "
             f"AI calls: {ai_calls}  |  reranked: {reranked}"
         )
-    return 0 if not errors else 1
+    # Individual source failures are expected (flaky feeds) and are recorded in
+    # the DB; they must NOT fail the CI job. Only hard errors (caught in main)
+    # return non-zero.
+    return 0
 
 
 def _fetch_reddit_with_retry(source: dict[str, Any], http: httpx.Client, token: str | None):

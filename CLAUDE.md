@@ -136,11 +136,21 @@ Phase 2 done:
   New flag `--no-ai`. Reddit OAuth wired (uses token if creds present, else .rss).
 - 31 tests total, all passing.
 
-**Next — Phase 4 (GitHub Actions cron).** Wrap `run.py` in `.github/workflows/
-collect.yml` (*/10), inject secrets. Then Phase 5 (dashboard).
+**Phase 4 (GitHub Actions cron) — CODE COMPLETE**, pending user pushing to a
+public GitHub repo + adding secrets. Created `.github/workflows/collect.yml`
+(*/10 cron + workflow_dispatch, concurrency guard, 8-min timeout, pip cache,
+Python 3.12). `run.py` now returns exit 0 on flaky-source errors (only hard
+errors fail CI). `config.py` `_env()` treats empty secrets as unset so only the
+4 required secrets are mandatory (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+GEMINI_API_KEY, GROQ_API_KEY). README Step 7 has exact secret list + how to test
+via the Actions "Run workflow" button.
+
+**Next — Phase 5 (Dashboard):** Next.js + Tailwind on Cloudflare Pages, Supabase
+Auth login, ranked feed, story detail, status changes.
 
 **To run the collector live:** `python collector/run.py` (add `--no-ai` to skip
 enrichment). AI backfill spreads 24 stories/run until all are enriched.
+`python collector/recluster.py` rebuilds all stories after clustering changes.
 
 ## Decisions Log
 

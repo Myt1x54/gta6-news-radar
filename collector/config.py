@@ -37,29 +37,36 @@ SOURCES_FILE = COLLECTOR_DIR / "sources.yaml"
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+def _env(name: str, default: str = "") -> str:
+    """os.getenv but treats an empty/whitespace value as unset. GitHub Actions
+    renders a missing secret as "", which would otherwise blank out defaults."""
+    val = os.getenv(name)
+    return val.strip() if val and val.strip() else default
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASS = os.getenv("SMTP_PASS", "")
-ALERT_TO = os.getenv("ALERT_TO", "")
+GEMINI_API_KEY = _env("GEMINI_API_KEY")
+GEMINI_MODEL = _env("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
+GROQ_API_KEY = _env("GROQ_API_KEY")
+GROQ_MODEL = _env("GROQ_MODEL", "openai/gpt-oss-120b")
 
-REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID", "")
-REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET", "")
+SMTP_HOST = _env("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(_env("SMTP_PORT", "587"))
+SMTP_USER = _env("SMTP_USER")
+SMTP_PASS = _env("SMTP_PASS")
+ALERT_TO = _env("ALERT_TO")
 
-USER_AGENT = os.getenv(
+YOUTUBE_API_KEY = _env("YOUTUBE_API_KEY")
+
+REDDIT_CLIENT_ID = _env("REDDIT_CLIENT_ID")
+REDDIT_CLIENT_SECRET = _env("REDDIT_CLIENT_SECRET")
+
+USER_AGENT = _env(
     "USER_AGENT",
     "GTA6NewsRadar/0.1 (+https://github.com/YOUR_USERNAME/gta6-news-radar)",
 )
-APP_TIMEZONE = os.getenv("APP_TIMEZONE", "Asia/Karachi")
-ALERT_THRESHOLD = float(os.getenv("ALERT_THRESHOLD", "75"))
+APP_TIMEZONE = _env("APP_TIMEZONE", "Asia/Karachi")
+ALERT_THRESHOLD = float(_env("ALERT_THRESHOLD", "75"))
 
 
 # ---------------------------------------------------------------------------
