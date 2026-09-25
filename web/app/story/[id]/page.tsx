@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import StatusControl from "@/components/StatusControl";
 import NotesEditor from "@/components/NotesEditor";
+import GenerateIdeasButton from "@/components/GenerateIdeasButton";
 import { createClient } from "@/lib/supabase/server";
 import type { Article, Story, VideoIdea } from "@/lib/types";
 import { categoryStyle, labelize, rankColor, statusStyle, timeAgo } from "@/lib/ui";
@@ -133,6 +134,7 @@ export default async function StoryPage({
               ))}
             </ul>
           )}
+          <GenerateIdeasButton storyId={s.id} />
         </Section>
 
         {/* Sources */}

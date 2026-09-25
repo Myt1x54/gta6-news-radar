@@ -201,10 +201,31 @@ stored 40 trending videos (101 units used, soft cap 3000/day). Modules:
 - 5 new tests (test_youtube) → 49 total, all passing.
 - **ACTION NEEDED: add YOUTUBE_API_KEY as a GitHub secret** so youtube.yml runs.
 
-**Next — Phase 8 (Polish):** PWA (manifest+icons, installable), "Generate more
-ideas" button (serverless fn so AI key stays server-side), settings page
-(threshold/quiet/weights), housekeeping (delete raw articles >60d), optional
-clustering AI tie-breaker.
+**Phase 8 (Polish) — COMPLETE** (2026-09-25). All build/tests pass.
+- **Housekeeping:** `db.delete_old_articles`/`delete_old_trends`; run.py deletes
+  articles >60d + trends >14d each run (config ARTICLE_RETENTION_DAYS=60,
+  TRENDS_RETENTION_DAYS=14).
+- **Settings-driven ranking:** `rerank_recent` now reads `settings.weights`
+  (falls back to config RANK_WEIGHTS). Alert threshold already from settings.
+- **PWA:** `web/public/manifest.webmanifest` + generated icons
+  (`web/public/icons/*.png`, made with Pillow), layout metadata (manifest, icons,
+  appleWebApp, viewport themeColor). Installable; app already responsive.
+- **"Generate more ideas":** `web/app/api/generate-ideas/route.ts` (POST, auth via
+  server supabase client, Gemini REST → Groq fallback, inserts video_ideas
+  generated_on_demand=true). Button `GenerateIdeasButton.tsx` on story page.
+  Both REST paths verified (Gemini 503-transient but well-formed; Groq 200).
+- **Settings page:** `web/app/settings/page.tsx` + `SettingsForm.tsx` (edit alert
+  threshold, email on/off, ranking weights) writes settings table. Header nav now
+  Feed | Trending | Settings.
+- Web env: server-side GEMINI_API_KEY/GROQ_API_KEY added to web/.env.local.
+- **ACTION NEEDED: add `GEMINI_API_KEY` + `GROQ_API_KEY` to Vercel** (normal env,
+  not NEXT_PUBLIC) so the button works in production — README Step 8.
+- Skipped (deferred): clustering AI tie-breaker (optional, lexical clustering
+  deemed good enough).
+
+**ALL 8 PHASES COMPLETE.** Remaining user actions: add SMTP_* + YOUTUBE_API_KEY
+GitHub secrets; add GEMINI/GROQ keys to Vercel. Optional future: Reddit OAuth,
+clustering AI tie-breaker, raise alert threshold once reddit+youtube signals mature.
 
 **To run the collector live:** `python collector/run.py` (add `--no-ai` to skip
 enrichment). AI backfill spreads 24 stories/run until all are enriched.

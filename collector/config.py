@@ -150,6 +150,7 @@ REDDIT_ENGAGEMENT_CAP = 5000  # upvotes + comments
 # Housekeeping
 # ---------------------------------------------------------------------------
 ARTICLE_RETENTION_DAYS = 60   # delete raw articles older than this
+TRENDS_RETENTION_DAYS = 14    # delete youtube_trends snapshots older than this
 RANK_RECOMPUTE_MAX_AGE_HOURS = 48  # re-rank stories younger than this each run
 
 # AI enrichment throughput (protects Gemini/Groq free quotas).

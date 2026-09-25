@@ -28,7 +28,12 @@ REDDIT_RETRY_SLEEP = 12.0  # wait then retry once on a 429
 import alerts
 import db
 import processing
-from config import AI_BATCH_SIZE, AI_MAX_STORIES_PER_RUN
+from config import (
+    AI_BATCH_SIZE,
+    AI_MAX_STORIES_PER_RUN,
+    ARTICLE_RETENTION_DAYS,
+    TRENDS_RETENTION_DAYS,
+)
 from fetchers import (
     fetch_source,
     get_reddit_token,
@@ -171,6 +176,15 @@ def run(dry_run: bool = False, limit: int | None = None, no_ai: bool = False) ->
                 print(f"email: breaking alert sent for {alerted} story(ies)")
         except Exception as exc:  # noqa: BLE001
             print(f"email: alert send failed: {type(exc).__name__}: {exc}")
+
+        # Housekeeping: drop raw articles/trends past retention (keeps under free tier)
+        try:
+            gone_a = db.delete_old_articles(client, ARTICLE_RETENTION_DAYS)
+            gone_t = db.delete_old_trends(client, TRENDS_RETENTION_DAYS)
+            if gone_a or gone_t:
+                print(f"housekeeping: -{gone_a} old articles, -{gone_t} old trends")
+        except Exception as exc:  # noqa: BLE001
+            print(f"housekeeping failed: {type(exc).__name__}: {exc}")
 
         db.finish_run(
             client,

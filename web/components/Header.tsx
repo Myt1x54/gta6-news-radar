@@ -13,6 +13,7 @@ export default function Header() {
           <nav className="flex items-center gap-3 text-sm text-zinc-400">
             <Link href="/" className="hover:text-zinc-100">Feed</Link>
             <Link href="/trending" className="hover:text-zinc-100">Trending</Link>
+            <Link href="/settings" className="hover:text-zinc-100">Settings</Link>
           </nav>
         </div>
         <SignOutButton />

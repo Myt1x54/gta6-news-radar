@@ -149,10 +149,15 @@ OpenNext adapter `@opennextjs/cloudflare` — not the deprecated
    - **Root Directory:** click **Edit** and set it to **`web`** (important — the
      Next app lives in the `web/` subfolder).
    - Framework preset auto-detects **Next.js**. Leave build/output defaults.
-5. Expand **Environment Variables** and add the two public frontend vars (copy
-   values from `web/.env.local`):
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+5. Expand **Environment Variables** and add these (copy values from `web/.env.local`):
+   - `NEXT_PUBLIC_SUPABASE_URL` (public)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (public)
+   - `GEMINI_API_KEY` (server-side — powers the "Generate more ideas" button)
+   - `GROQ_API_KEY` (server-side — fallback for that button)
+   - *(optional)* `GEMINI_MODEL`, `GROQ_MODEL` to override the defaults
+
+   The `GEMINI_API_KEY` / `GROQ_API_KEY` here are **normal** Vercel env vars (NOT
+   prefixed `NEXT_PUBLIC_`), so they stay server-side and never reach the browser.
 6. Click **Deploy**. After ~1–2 min you get a live URL like
    `https://gta6-news-radar.vercel.app`. Open it and log in with your Supabase
    account.

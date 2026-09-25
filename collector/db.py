@@ -230,6 +230,22 @@ def get_trending_keywords(client, hours: int = 6, top_n: int = 15) -> list[str]:
     return [kw for kw, _ in counts.most_common(top_n)]
 
 
+# ---------------------------------------------------------------------------
+# housekeeping (PROJECT_BRIEF §6.4)
+# ---------------------------------------------------------------------------
+def delete_old_articles(client, days: int) -> int:
+    """Delete raw article rows older than `days` (stories are kept)."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    resp = client.table("articles").delete().lt("fetched_at", cutoff).execute()
+    return len(resp.data or [])
+
+
+def delete_old_trends(client, days: int) -> int:
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    resp = client.table("youtube_trends").delete().lt("captured_at", cutoff).execute()
+    return len(resp.data or [])
+
+
 def get_best_ideas_for(client, story_ids: list[str]) -> dict[str, dict[str, Any]]:
     """Return one representative video idea per story (first found)."""
     out: dict[str, dict[str, Any]] = {}

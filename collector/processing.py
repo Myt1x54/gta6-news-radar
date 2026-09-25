@@ -212,6 +212,8 @@ def rerank_recent(client) -> int:
     ids = [s["id"] for s in stories]
     signals = db.aggregate_story_signals(client, ids, cred_map)
     trend_tokens = set(db.get_trending_keywords(client, hours=6, top_n=25))
+    # Weights come from the settings table (dashboard-tunable), else config defaults.
+    weights = db.get_settings(client).get("weights") or None
 
     n = 0
     for s in stories:
@@ -225,7 +227,7 @@ def rerank_recent(client) -> int:
             "youtube_trend_match": _trend_match(s.get("headline"), trend_tokens),
             "first_seen_at": _parse_dt(s.get("first_seen_at")),
         }
-        score = compute_rank_score(story_for_rank)
+        score = compute_rank_score(story_for_rank, weights=weights)
         db.update_story(
             client,
             s["id"],
