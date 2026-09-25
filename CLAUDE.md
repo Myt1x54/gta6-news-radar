@@ -248,7 +248,10 @@ enrichment). AI backfill spreads 24 stories/run until all are enriched.
       cron-job.org (not in our repo). The `schedule:` block stays as a fallback.
       Endpoint: POST /repos/Myt1x54/gta6-news-radar/actions/workflows/collect.yml/dispatches
       body {"ref":"main"}. Alt (no external svc): a self-looping workflow — hacky,
-      rejected for now. STATUS: instructions given to user; awaiting setup.
+      rejected for now. STATUS: RESOLVED 2026-09-25 — cron-job.org job set up,
+      test run returned 204 (actions=write confirmed), firing collect every 10 min
+      via the API. Authorization header must be `Bearer <PAT>` (raw token → 401).
+      The `schedule:` block stays as fallback.
 - [x] **Vercel access RESOLVED (2026-09-25).** The PRODUCTION domain
       `https://gta6-news-radar.vercel.app` is already public (verified anonymously
       — shows our Supabase login, no Vercel SSO). The user was opening a
