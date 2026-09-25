@@ -249,12 +249,13 @@ enrichment). AI backfill spreads 24 stories/run until all are enriched.
       Endpoint: POST /repos/Myt1x54/gta6-news-radar/actions/workflows/collect.yml/dispatches
       body {"ref":"main"}. Alt (no external svc): a self-looping workflow — hacky,
       rejected for now. STATUS: instructions given to user; awaiting setup.
-- [ ] **Vercel Deployment Protection blocks public access (2026-09-25).** New
-      Vercel projects enable "Vercel Authentication" which puts a Vercel SSO login
-      in front of ALL deployments — user couldn't open/share the site. Fix:
-      Vercel → project → Settings → Deployment Protection → disable Vercel
-      Authentication. Safe: our own Supabase login + RLS still gate the app.
-      STATUS: instructions given to user; awaiting toggle.
+- [x] **Vercel access RESOLVED (2026-09-25).** The PRODUCTION domain
+      `https://gta6-news-radar.vercel.app` is already public (verified anonymously
+      — shows our Supabase login, no Vercel SSO). The user was opening a
+      per-deployment URL (`...-hash-myt1x54s-projects.vercel.app`), which Vercel
+      always protects. The "Vercel Authentication" toggle is greyed ("additional
+      permissions") but irrelevant. **Always share the production domain, not
+      deployment URLs.**
 - [ ] **web dev server must use webpack, not Turbopack** on this machine. Next 16
       Turbopack DEV fails to resolve `@swc/helpers/_/_interop_require_*` (500s),
       while the production `next build` (also Turbopack) resolves them fine.
