@@ -65,6 +65,17 @@ export interface VideoIdea {
   generated_on_demand: boolean;
 }
 
+export interface YouTubeTrend {
+  id: number;
+  video_id: string;
+  channel: string | null;
+  title: string | null;
+  views: number | null;
+  view_velocity: number | null;
+  topic_keywords: string[] | null;
+  captured_at: string;
+}
+
 export interface Article {
   id: number;
   url: string;

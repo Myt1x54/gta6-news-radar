@@ -11,7 +11,7 @@ from typing import Any, Iterable
 
 import db
 from ai.enrich import enrich_stories
-from clustering import assign_clusters
+from clustering import assign_clusters, significant_tokens
 from config import (
     CLUSTER_WINDOW_HOURS,
     RANK_RECOMPUTE_MAX_AGE_HOURS,
@@ -183,34 +183,35 @@ def enrich_new_stories(client, story_ids: list[str], *, batch_size: int = 6) -> 
 
 
 def _recent_trend_topics(client) -> list[str]:
-    """Pull recent YouTube trend keywords for prompt context (Phase 7 fills the
-    table; returns [] until then)."""
+    """Frequency-ranked YouTube trend keywords for prompt context (Phase 7).
+    Returns [] until the youtube_trends table has recent data."""
     try:
-        resp = (
-            client.table("youtube_trends")
-            .select("topic_keywords")
-            .order("captured_at", desc=True)
-            .limit(20)
-            .execute()
-        )
+        return db.get_trending_keywords(client, hours=6, top_n=15)
     except Exception:  # noqa: BLE001
         return []
-    topics: list[str] = []
-    for r in resp.data:
-        for kw in r.get("topic_keywords") or []:
-            if kw and kw not in topics:
-                topics.append(kw)
-    return topics[:15]
 
 
 # ---------------------------------------------------------------------------
 # Stage 3: (re)compute rank_score for recent stories
 # ---------------------------------------------------------------------------
+def _trend_match(headline: str | None, trend_tokens: set[str]) -> float:
+    """0-1 score for how well a story matches currently-trending YT topics."""
+    if not trend_tokens:
+        return 0.0
+    shared = len(significant_tokens(headline) & trend_tokens)
+    if shared >= 2:
+        return 1.0
+    if shared == 1:
+        return 0.6
+    return 0.0
+
+
 def rerank_recent(client) -> int:
     cred_map = db.source_credibility_map(client)
     stories = db.get_stories_for_rerank(client, RANK_RECOMPUTE_MAX_AGE_HOURS)
     ids = [s["id"] for s in stories]
     signals = db.aggregate_story_signals(client, ids, cred_map)
+    trend_tokens = set(db.get_trending_keywords(client, hours=6, top_n=25))
 
     n = 0
     for s in stories:
@@ -221,7 +222,7 @@ def rerank_recent(client) -> int:
             "source_count": sig.get("source_count", 1),
             "reddit_score": sig.get("reddit_score", 0),
             "reddit_comments": sig.get("reddit_comments", 0),
-            "youtube_trend_match": 0.0,  # Phase 7 wires this in
+            "youtube_trend_match": _trend_match(s.get("headline"), trend_tokens),
             "first_seen_at": _parse_dt(s.get("first_seen_at")),
         }
         score = compute_rank_score(story_for_rank)

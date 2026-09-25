@@ -186,6 +186,50 @@ def get_digest_stories(client, since_iso: str, limit: int) -> list[dict[str, Any
     return resp.data
 
 
+# ---------------------------------------------------------------------------
+# youtube_trends
+# ---------------------------------------------------------------------------
+def insert_youtube_trends(client, rows: list[dict[str, Any]]) -> int:
+    if not rows:
+        return 0
+    client.table("youtube_trends").insert(rows).execute()
+    return len(rows)
+
+
+def get_recent_trends(client, hours: int = 6, limit: int = 15) -> list[dict[str, Any]]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    resp = (
+        client.table("youtube_trends")
+        .select("video_id,channel,title,views,view_velocity,topic_keywords,captured_at")
+        .gte("captured_at", cutoff)
+        .order("view_velocity", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return resp.data
+
+
+def get_trending_keywords(client, hours: int = 6, top_n: int = 15) -> list[str]:
+    """Frequency-ranked topic keywords from recent trend captures."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    resp = (
+        client.table("youtube_trends")
+        .select("topic_keywords")
+        .gte("captured_at", cutoff)
+        .order("view_velocity", desc=True)
+        .limit(60)
+        .execute()
+    )
+    from collections import Counter
+
+    counts: Counter[str] = Counter()
+    for r in resp.data:
+        for kw in r.get("topic_keywords") or []:
+            if kw:
+                counts[kw] += 1
+    return [kw for kw, _ in counts.most_common(top_n)]
+
+
 def get_best_ideas_for(client, story_ids: list[str]) -> dict[str, dict[str, Any]]:
     """Return one representative video idea per story (first found)."""
     out: dict[str, dict[str, Any]] = {}
@@ -329,7 +373,7 @@ def get_stories_for_rerank(client, hours: int) -> list[dict[str, Any]]:
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
     resp = (
         client.table("stories")
-        .select("id,video_score,credibility,first_seen_at")
+        .select("id,headline,video_score,credibility,first_seen_at")
         .gte("first_seen_at", cutoff)
         .execute()
     )

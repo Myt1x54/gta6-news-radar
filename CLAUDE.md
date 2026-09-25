@@ -184,9 +184,27 @@ email + a real 5-story digest to abdulmoiz56898@gmail.com via Gmail SMTP. Module
 - **ACTION NEEDED: user must add SMTP secrets to GitHub** (SMTP_HOST, SMTP_PORT,
   SMTP_USER, SMTP_PASS, ALERT_TO) so CI email works — README Step 7.
 
-**Next — Phase 7 (YouTube trends):** youtube_trends.py (search last 48h, view
-velocity, topics → youtube_trends table), quota guard (<30% of 10k/day), dashboard
-"Trending" panel, feed trends into AI prompt + ranking. Needs YOUTUBE_API_KEY.
+**Phase 7 (YouTube trends) — COMPLETE & VERIFIED LIVE** (2026-09-25). Live run
+stored 40 trending videos (101 units used, soft cap 3000/day). Modules:
+- `collector/youtube_api.py` — search_recent (search.list=100u), fetch_video_stats
+  (videos.list=1u/50 ids), compute_velocity (views/hr), extract_topic_keywords
+  (self-contained tokenizer, drops GTA/filler stopwords), parse_* (pure/testable).
+- `collector/youtube_trends.py` — job: search GTA 6 last 48h → stats → velocity +
+  keywords → youtube_trends table; logs units in runs.errors.youtube_units.
+- `db.py` — insert_youtube_trends, get_recent_trends, get_trending_keywords
+  (frequency-ranked). `processing._recent_trend_topics` now uses it (feeds AI
+  prompt). `processing._trend_match` + rerank now compute youtube_trend_match
+  (headline vs trending tokens: >=2 shared=1.0, 1=0.6, else 0) → into rank_score.
+- Web: `web/app/trending/page.tsx` (top videos by velocity + tracked-creator
+  uploads) + Header nav (Feed | Trending). Build passes.
+- Workflow `.github/workflows/youtube.yml` (cron 0 */3 * * * + dispatch).
+- 5 new tests (test_youtube) → 49 total, all passing.
+- **ACTION NEEDED: add YOUTUBE_API_KEY as a GitHub secret** so youtube.yml runs.
+
+**Next — Phase 8 (Polish):** PWA (manifest+icons, installable), "Generate more
+ideas" button (serverless fn so AI key stays server-side), settings page
+(threshold/quiet/weights), housekeeping (delete raw articles >60d), optional
+clustering AI tie-breaker.
 
 **To run the collector live:** `python collector/run.py` (add `--no-ai` to skip
 enrichment). AI backfill spreads 24 stories/run until all are enriched.
