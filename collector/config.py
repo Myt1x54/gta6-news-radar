@@ -66,7 +66,10 @@ USER_AGENT = _env(
     "GTA6NewsRadar/0.1 (+https://github.com/YOUR_USERNAME/gta6-news-radar)",
 )
 APP_TIMEZONE = _env("APP_TIMEZONE", "Asia/Karachi")
-ALERT_THRESHOLD = float(_env("ALERT_THRESHOLD", "75"))
+# Breaking-alert threshold (0-100). 65 chosen because reddit-engagement and
+# youtube-trend signals (20% of the score) aren't live yet, so the current
+# practical max is ~67; 75 would never fire. Raise toward 75 once those land.
+ALERT_THRESHOLD = float(_env("ALERT_THRESHOLD", "65"))
 
 # Base URL of the deployed dashboard, used for links in emails.
 DASHBOARD_URL = _env("DASHBOARD_URL", "https://gta6-news-radar.vercel.app").rstrip("/")

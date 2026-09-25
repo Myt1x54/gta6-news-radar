@@ -3,21 +3,6 @@ from datetime import datetime, timezone
 import alerts
 
 
-def test_is_quiet_hour_normal_window():
-    # quiet 1..8
-    assert alerts.is_quiet_hour(2, 1, 8)
-    assert alerts.is_quiet_hour(1, 1, 8)
-    assert not alerts.is_quiet_hour(8, 1, 8)
-    assert not alerts.is_quiet_hour(12, 1, 8)
-
-
-def test_is_quiet_hour_midnight_wrap():
-    # quiet 22..6 (wraps midnight)
-    assert alerts.is_quiet_hour(23, 22, 6)
-    assert alerts.is_quiet_hour(3, 22, 6)
-    assert not alerts.is_quiet_hour(12, 22, 6)
-
-
 def _story(i, rank=90):
     return {"id": f"s{i}", "headline": f"Story {i}", "summary": "x", "rank_score": rank}
 
@@ -48,12 +33,12 @@ def test_sends_bundled_alert_and_marks(monkeypatch):
     assert marked["ids"] == ["s1", "s2"]
 
 
-def test_holds_during_quiet_hours(monkeypatch):
-    sent, marked = _patch(monkeypatch, candidates=[_story(1)])
-    # 21:00 UTC -> 02:00 PKT (quiet 1..8)
+def test_sends_any_time_of_day(monkeypatch):
+    # 21:00 UTC = 02:00 PKT — previously quiet; must now still send
+    sent, _ = _patch(monkeypatch, candidates=[_story(1)])
     n = alerts.send_breaking_alerts(None, now=datetime(2026, 9, 25, 21, 0, tzinfo=timezone.utc))
-    assert n == 0
-    assert "to" not in sent
+    assert n == 1
+    assert sent["to"] == "to@example.com"
 
 
 def test_respects_hourly_budget(monkeypatch):
