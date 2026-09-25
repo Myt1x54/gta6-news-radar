@@ -7,6 +7,7 @@ supabase==2.9.1           # Supabase Postgres + Auth client
 pydantic==2.9.2           # validate AI JSON output
 PyYAML==6.0.2             # read sources.yaml
 python-dotenv==1.0.1      # load .env locally
+tzdata==2024.2           # timezone database for zoneinfo (quiet hours on Windows)
 google-genai==0.8.0       # Gemini (primary AI)
 groq==0.11.0              # Groq (fallback AI, OpenAI-compatible)
 

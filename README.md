@@ -112,9 +112,14 @@ The collector runs on GitHub Actions via [`.github/workflows/collect.yml`](.gith
    - `GEMINI_API_KEY`
    - `GROQ_API_KEY`
 
+   **For email (Phase 6 — breaking alerts + daily digest):**
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `ALERT_TO` (from README
+     Step 5). Without these, the app still works — it just won't send email.
+
    **Optional** (only if you set up that source / want to override a default):
    - `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` (if you did the Reddit app)
    - `YOUTUBE_API_KEY` (used from Phase 7)
+   - `DASHBOARD_URL` (defaults to the Vercel URL; only set if you use a custom domain)
    - `GEMINI_MODEL`, `GROQ_MODEL`, `USER_AGENT`, `APP_TIMEZONE`, `ALERT_THRESHOLD`
      (all have sensible defaults in code — only add to override)
 

@@ -68,6 +68,9 @@ USER_AGENT = _env(
 APP_TIMEZONE = _env("APP_TIMEZONE", "Asia/Karachi")
 ALERT_THRESHOLD = float(_env("ALERT_THRESHOLD", "75"))
 
+# Base URL of the deployed dashboard, used for links in emails.
+DASHBOARD_URL = _env("DASHBOARD_URL", "https://gta6-news-radar.vercel.app").rstrip("/")
+
 
 # ---------------------------------------------------------------------------
 # GTA 6 relevance keyword filter (cheap first pass; AI is the second pass)

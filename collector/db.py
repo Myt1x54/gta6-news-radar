@@ -123,6 +123,86 @@ def _now_iso() -> str:
 
 
 # ---------------------------------------------------------------------------
+# settings / email alerts / digest
+# ---------------------------------------------------------------------------
+def get_settings(client) -> dict[str, Any]:
+    try:
+        resp = client.table("settings").select("*").eq("id", 1).single().execute()
+        return resp.data or {}
+    except Exception:  # noqa: BLE001 - fall back to config defaults
+        return {}
+
+
+_STORY_EMAIL_COLS = (
+    "id,headline,summary,category,video_score,rank_score,source_count,first_seen_at"
+)
+
+
+def get_alert_candidates(client, threshold: float, since_iso: str, limit: int) -> list[dict[str, Any]]:
+    """Enriched, un-alerted stories at/above the threshold, newest window."""
+    if limit <= 0:
+        return []
+    resp = (
+        client.table("stories")
+        .select(_STORY_EMAIL_COLS)
+        .gte("rank_score", threshold)
+        .is_("alerted_at", "null")
+        .not_.is_("ai_model_used", "null")
+        .gte("first_seen_at", since_iso)
+        .order("rank_score", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return resp.data
+
+
+def count_recent_alerts(client, since_iso: str) -> int:
+    resp = (
+        client.table("stories")
+        .select("id", count="exact")
+        .gte("alerted_at", since_iso)
+        .execute()
+    )
+    return resp.count or 0
+
+
+def mark_stories_alerted(client, ids: list[str], when_iso: str) -> None:
+    for i in range(0, len(ids), 100):
+        client.table("stories").update({"alerted_at": when_iso}).in_(
+            "id", ids[i : i + 100]
+        ).execute()
+
+
+def get_digest_stories(client, since_iso: str, limit: int) -> list[dict[str, Any]]:
+    resp = (
+        client.table("stories")
+        .select(_STORY_EMAIL_COLS)
+        .not_.is_("ai_model_used", "null")
+        .gte("first_seen_at", since_iso)
+        .order("rank_score", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return resp.data
+
+
+def get_best_ideas_for(client, story_ids: list[str]) -> dict[str, dict[str, Any]]:
+    """Return one representative video idea per story (first found)."""
+    out: dict[str, dict[str, Any]] = {}
+    if not story_ids:
+        return out
+    resp = (
+        client.table("video_ideas")
+        .select("story_id,title,hook,format")
+        .in_("story_id", story_ids)
+        .execute()
+    )
+    for r in resp.data:
+        out.setdefault(r["story_id"], r)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # stories / clustering / video_ideas
 # ---------------------------------------------------------------------------
 def get_articles_without_story(client, limit: int = 2000) -> list[dict[str, Any]]:

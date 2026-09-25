@@ -45,4 +45,11 @@ jobs:
           USER_AGENT: ${{ secrets.USER_AGENT }}
           APP_TIMEZONE: ${{ secrets.APP_TIMEZONE }}
           ALERT_THRESHOLD: ${{ secrets.ALERT_THRESHOLD }}
+          # Email (breaking alerts fire from this run)
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
         run: python collector/run.py

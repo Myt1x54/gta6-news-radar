@@ -164,11 +164,29 @@ launch.json` has a `web` dev-server config (port 3000). web/.env.local holds
 NEXT_PUBLIC_SUPABASE_URL + ANON key (gitignored). Auth user exists:
 abdulmoiz56898@gmail.com.
 
-**Next — Phase 6 (Email):** breaking alerts (rank_score >= threshold, dedupe via
-alerted_at, max 5/hr bundled, quiet hours) + daily digest (top 5 + best idea +
-trends). Gmail SMTP via App Password in `collector/emailer/`. Needs user to make
-a Gmail App Password (README Step 5) + add SMTP_* GitHub Secrets. New workflow
-digest.yml (daily 04:00 UTC); alerts fire from the collect run.
+**Phase 6 (Email) — COMPLETE & VERIFIED LIVE** (2026-09-25). Sent a real test
+email + a real 5-story digest to abdulmoiz56898@gmail.com via Gmail SMTP. Modules:
+- `collector/emailer/sender.py` — `send_email()` (Gmail SMTP starttls, strips
+  spaces from App Password), `email_configured()`. Swappable provider.
+- `collector/emailer/templates.py` — `render_alert_email`, `render_digest_email`
+  (inline-styled mobile HTML, HTML-escaped, links to DASHBOARD_URL/story/<id>).
+- `collector/alerts.py` — `send_breaking_alerts()`: enriched stories with
+  rank>=threshold & alerted_at null, within 48h; quiet hours (PKT via zoneinfo,
+  UTC+5 fallback) HOLD; cap MAX_ALERTS_PER_HOUR=5 stories/hr; bundles all into
+  ONE email/run; sets alerted_at. `is_quiet_hour()` handles midnight wrap.
+- `collector/daily_digest.py` — top DIGEST_TOP_N (5) stories last 24h + best idea
+  per story + trend topics; own `digest` run row.
+- `run.py` calls alerts after rerank (non-fatal try/except).
+- Workflows: collect.yml now passes SMTP_* + DASHBOARD_URL (alerts fire from
+  collect); new `digest.yml` (cron 0 4 * * * = 09:00 PKT + dispatch).
+- `config.DASHBOARD_URL` added. `tzdata` added to requirements.
+- 46 tests total (added test_alerts, test_email_templates), all passing.
+- **ACTION NEEDED: user must add SMTP secrets to GitHub** (SMTP_HOST, SMTP_PORT,
+  SMTP_USER, SMTP_PASS, ALERT_TO) so CI email works — README Step 7.
+
+**Next — Phase 7 (YouTube trends):** youtube_trends.py (search last 48h, view
+velocity, topics → youtube_trends table), quota guard (<30% of 10k/day), dashboard
+"Trending" panel, feed trends into AI prompt + ranking. Needs YOUTUBE_API_KEY.
 
 **To run the collector live:** `python collector/run.py` (add `--no-ai` to skip
 enrichment). AI backfill spreads 24 stories/run until all are enriched.

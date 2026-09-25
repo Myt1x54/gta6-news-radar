@@ -25,6 +25,7 @@ import httpx
 REDDIT_MIN_INTERVAL = 5.0
 REDDIT_RETRY_SLEEP = 12.0  # wait then retry once on a 429
 
+import alerts
 import db
 import processing
 from config import AI_BATCH_SIZE, AI_MAX_STORIES_PER_RUN
@@ -162,6 +163,14 @@ def run(dry_run: bool = False, limit: int | None = None, no_ai: bool = False) ->
 
         reranked = processing.rerank_recent(client)
         print(f"ranking: {reranked} stories rescored")
+
+        # Breaking-news email alerts (non-fatal: never fail the run on email error)
+        try:
+            alerted = alerts.send_breaking_alerts(client)
+            if alerted:
+                print(f"email: breaking alert sent for {alerted} story(ies)")
+        except Exception as exc:  # noqa: BLE001
+            print(f"email: alert send failed: {type(exc).__name__}: {exc}")
 
         db.finish_run(
             client,
