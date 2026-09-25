@@ -224,6 +224,13 @@ enrichment). AI backfill spreads 24 stories/run until all are enriched.
   easy — it currently uses none. **If we ever move to Cloudflare, use the
   OpenNext adapter `@opennextjs/cloudflare`, NOT the deprecated
   `@cloudflare/next-on-pages`.**
+- **2026-09-25 — Breaking alerts: no quiet hours + threshold 65** (per user).
+  Quiet-hours hold removed — alerts fire 24/7. Threshold lowered 75→65 because
+  reddit-engagement + youtube-trend weights (0.10 each = 20% of score) currently
+  contribute 0, so live rank_score maxes ~67 (measured: 421 enriched stories,
+  max 66.8, only 8 ≥60, 1 ≥65, 0 ≥70). 75 would never fire. Value stored in the
+  `settings` table (read first) + config/.env fallback. Raise toward 70-75 once
+  Phase 7 (youtube) + reddit engagement are live and scores rise.
 - **2026-09-24 — Reddit uses `.rss` not `.json`** — `.json` is bot-walled for
   datacenter IPs (403/HTML interstitial). `.rss` works but omits upvote/comment
   counts. Engagement will be added later via free Reddit OAuth (script app).
